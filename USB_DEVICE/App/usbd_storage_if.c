@@ -69,6 +69,18 @@
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
 
+#ifdef STORAGE_LUN_NBR
+	#warning undef system defines
+
+	#undef STORAGE_LUN_NBR
+	#undef STORAGE_BLK_NBR
+	#undef STORAGE_BLK_SIZ
+
+	#define STORAGE_LUN_NBR                  1
+	#define STORAGE_BLK_NBR                  FL_PAGE_NBR
+	#define STORAGE_BLK_SIZ                  FL_PAGE_SIZ
+#endif
+
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
@@ -106,10 +118,10 @@ const int8_t STORAGE_Inquirydata_FS[] = {/* 36 */
   0x00,
   0x00,
   0x00,
-  'S', 'T', 'M', ' ', ' ', ' ', ' ', ' ', /* Manufacturer : 8 bytes */
-  'P', 'r', 'o', 'd', 'u', 'c', 't', ' ', /* Product      : 16 Bytes */
-  ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-  '0', '.', '0' ,'1'                      /* Version      : 4 Bytes */
+  'K', 'A', 'R', 'M', 'A', '-', 'E', ' ', /* Manufacturer : 8 bytes */
+  'F', 'l', 'a', 's', 'h', '-', '1', 'v', /* Product      : 16 Bytes */
+  '0', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+  '1', 'v', '0' ,' '                      /* Version      : 4 Bytes */
 };
 /* USER CODE END INQUIRY_DATA_FS */
 
