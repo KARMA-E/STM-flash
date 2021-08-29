@@ -44,6 +44,10 @@
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 
+
+#define TIME_START_USEC 	TIM2->CNT = 0; TIM3->CNT = 0;
+#define TIME_GET_USEC		(TIM3->CNT + (10000 * TIM2->CNT))
+
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
