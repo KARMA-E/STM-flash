@@ -1,28 +1,18 @@
+#ifndef _FLASH_MY_H
+#define _FLASH_MY_H
 
-//=================================================== Подключение необходимых заголовочных файлов ===================================================//
 
-#include "param.h"											// Заголовочный файл основных настроек
+#include "stm32f1xx_hal.h"
 
-//============================================ Список #define, определяющих структуру хранения во FLASH =============================================//
-
-#define SAVEKEY 	0xAABBCCDD								// Ключевое (проверочное) слово
-#define ADR_MAIN 	FLASH_START								// Адрес основной страницы
-#define ADR_RES  	(FLASH_START+0x400)						// Адрес резервной страницы
-#define ADR_BUS		(FLASH_START+0x800)						// Адрес настроек modbus
-#define ADR_SN		(FLASH_START+0xC00)						// Адрес серийных номеров
-#define CELL		4										// Размер ячейки памяти(в байтах)
-#define FLASH_SIZE	0xC00									// Размер памяти хранения данных модуля
-
-//================================================= Объявление функций, используемых в основном коде ================================================//
 
 void PVD_Init(void);										// Инициализация детектора напряжения
 
 void flash_unlock(void);									// Разблокировать FLASH
 void flash_lock();											// Заблокировать FLASH
 uint8_t flash_ready(void);									// Проверка готовности FLASH
-void flash_erase_page(uint32_t address);					// Стирание страницы FLASH
+void flash_erase_page(uint32_t addr);						// Стирание страницы FLASH
 
-uint32_t flash_read(uint32_t address);						// Чтение FLASH
-void flash_write(uint32_t address,uint32_t data);			// Запись FLASH
+uint32_t flash_read(uint32_t addr);							// Чтение FLASH
+void flash_write(uint32_t addr,uint32_t data);				// Запись FLASH
 
-//===================================================================================================================================================//
+#endif
