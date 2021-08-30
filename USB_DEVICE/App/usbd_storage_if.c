@@ -116,10 +116,10 @@ const int8_t STORAGE_Inquirydata_FS[] = {/* 36 */
   0x00,
   0x00,
   0x00,
-  'S', 'T', 'M', ' ', ' ', ' ', ' ', ' ', /* Manufacturer : 8 bytes */
-  'P', 'r', 'o', 'd', 'u', 'c', 't', ' ', /* Product      : 16 Bytes */
-  ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-  '0', '.', '0' ,'1'                      /* Version      : 4 Bytes */
+  'K', 'A', 'R', 'M', 'A', '-', 'E', ' ', /* Manufacturer : 8 bytes */
+  'F', 'P', 'a', 's', 's', '-', '1', 'v', /* Product      : 16 Bytes */
+  '1', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+  '1', 'v', '0' ,' '                      /* Version      : 4 Bytes */
 };
 /* USER CODE END INQUIRY_DATA_FS */
 
@@ -216,7 +216,12 @@ int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_
 int8_t STORAGE_IsReady_FS(uint8_t lun)
 {
   /* USER CODE BEGIN 4 */
-  return (USBD_OK);
+	if (FLASH->SR & FLASH_SR_BSY)
+	{
+		return (USBD_BUSY);
+	}
+
+	return (USBD_OK);
   /* USER CODE END 4 */
 }
 
@@ -247,6 +252,14 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 	for(uint32_t blk_num = 0; blk_num < blk_len; blk_num++)
 	{
 		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+		GPIOA->CRH ^= GPIO_CRH_MODE9_0;
+		GPIOA->BSRR = GPIO_BSRR_BR9;
+
+		if(blk_num + blk_addr >= ((FL_END_ADDR_REAL - FL_START_ADDR) / FL_PAGE_SIZ))
+		{
+			blk_addr = ((FL_END_ADDR_REAL - FL_START_ADDR) / FL_PAGE_SIZ) - 1;
+			blk_num = 0;
+		}
 
 		for(uint32_t k = 0; k < STORAGE_BLK_SIZ; k += 4)
 		{
@@ -274,22 +287,26 @@ int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t b
 {
   /* USER CODE BEGIN 7 */
 
+	uint8_t _fl_erase = 1;
+
 	uint32_t _cur_addr = 0;
 	uint32_t _cur_word = 0;
 
-
-
 	for(uint32_t blk_num = 0; blk_num < blk_len; blk_num++)
 	{
-		if(blk_num >= ((FL_END_ADDR - FL_START_ADDR) / FL_PAGE_SIZ))
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+		GPIOA->CRH ^= GPIO_CRH_MODE9_0;
+		GPIOA->BSRR = GPIO_BSRR_BS9;
+
+		if(blk_num + blk_addr >= ((FL_END_ADDR_REAL - FL_START_ADDR) / FL_PAGE_SIZ))
 		{
-			blk_num = ((FL_END_ADDR - FL_START_ADDR) / FL_PAGE_SIZ) - 1;
+			blk_addr = ((FL_END_ADDR_REAL - FL_START_ADDR) / FL_PAGE_SIZ) - 1;
+			blk_num = 0;
+			_fl_erase = 0;
 		}
 
-		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-
 		_cur_addr = FL_START_ADDR + (blk_addr + blk_num) * STORAGE_BLK_SIZ;
-		if(_cur_addr < FL_END_ADDR) flash_erase_page(_cur_addr);
+		if(_cur_addr < FL_END_ADDR && _fl_erase) flash_erase_page(_cur_addr);
 
 		for(uint32_t k = 0; k < STORAGE_BLK_SIZ; k += 4)
 		{
