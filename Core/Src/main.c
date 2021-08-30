@@ -91,15 +91,16 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USB_DEVICE_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
+  MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   	HAL_TIM_Base_Init(&htim2);
   	HAL_TIM_Base_Start(&htim2);
   	HAL_TIM_Base_Init(&htim3);
   	HAL_TIM_Base_Start(&htim3);
 
+  	/*
   	GPIO_InitTypeDef GPIO_USB;
   	GPIO_USB.Pin = GPIO_PIN_11|GPIO_PIN_12;
   	GPIO_USB.Mode = GPIO_MODE_OUTPUT_PP;
@@ -109,7 +110,8 @@ int main(void)
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_RESET);
   	HAL_Delay(10);
-  	MX_USB_DEVICE_Init();
+  	*/
+  	//MX_USB_DEVICE_Init();
 
   	flash_unlock();
 
@@ -127,7 +129,7 @@ int main(void)
   while (1)
   {
 	  HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-	  HAL_Delay(50);
+	  //HAL_Delay(50);
 
     /* USER CODE END WHILE */
 
