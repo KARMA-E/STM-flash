@@ -246,6 +246,8 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 
 	for(uint32_t blk_num = 0; blk_num < blk_len; blk_num++)
 	{
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+
 		for(uint32_t k = 0; k < STORAGE_BLK_SIZ; k += 4)
 		{
 			_cur_addr = FL_START_ADDR + (blk_addr + blk_num) * STORAGE_BLK_SIZ + k;
@@ -277,6 +279,8 @@ int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t b
 
 	for(uint32_t blk_num = 0; blk_num < blk_len; blk_num++)
 	{
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+
 		_cur_addr = FL_START_ADDR + (blk_addr + blk_num) * STORAGE_BLK_SIZ;
 		if(_cur_addr < FL_END_ADDR) flash_erase_page(_cur_addr);
 
