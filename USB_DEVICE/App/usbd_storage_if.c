@@ -277,8 +277,15 @@ int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t b
 	uint32_t _cur_addr = 0;
 	uint32_t _cur_word = 0;
 
+
+
 	for(uint32_t blk_num = 0; blk_num < blk_len; blk_num++)
 	{
+		if(blk_num >= ((FL_END_ADDR - FL_START_ADDR) / FL_PAGE_SIZ))
+		{
+			blk_num = ((FL_END_ADDR - FL_START_ADDR) / FL_PAGE_SIZ) - 1;
+		}
+
 		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 
 		_cur_addr = FL_START_ADDR + (blk_addr + blk_num) * STORAGE_BLK_SIZ;
