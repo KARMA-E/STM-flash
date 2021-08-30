@@ -68,7 +68,6 @@
 #define STORAGE_BLK_SIZ                  0x200
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
-
 #ifdef STORAGE_LUN_NBR
 	#warning undef system defines
 
@@ -80,7 +79,6 @@
 	#define STORAGE_BLK_NBR                  FL_PAGE_NBR
 	#define STORAGE_BLK_SIZ                  FL_PAGE_SIZ
 #endif
-
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
@@ -118,10 +116,10 @@ const int8_t STORAGE_Inquirydata_FS[] = {/* 36 */
   0x00,
   0x00,
   0x00,
-  'K', 'A', 'R', 'M', 'A', '-', 'E', ' ', /* Manufacturer : 8 bytes */
-  'F', 'l', 'a', 's', 'h', '-', '1', 'v', /* Product      : 16 Bytes */
-  '0', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-  '1', 'v', '0' ,' '                      /* Version      : 4 Bytes */
+  'S', 'T', 'M', ' ', ' ', ' ', ' ', ' ', /* Manufacturer : 8 bytes */
+  'P', 'r', 'o', 'd', 'u', 'c', 't', ' ', /* Product      : 16 Bytes */
+  ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+  '0', '.', '0' ,'1'                      /* Version      : 4 Bytes */
 };
 /* USER CODE END INQUIRY_DATA_FS */
 
@@ -242,7 +240,46 @@ int8_t STORAGE_IsWriteProtected_FS(uint8_t lun)
 int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 6 */
-  return (USBD_OK);
+	/*
+	uint32_t _cur_addr = 0;
+	uint32_t _cur_word = 0;
+
+	for(uint32_t blk_num = 0; blk_num < blk_len; blk_num++)
+	{
+		for(uint32_t k = 0; k < STORAGE_BLK_SIZ; k += 4)
+		{
+			_cur_addr = FL_START_ADDR + (blk_addr + blk_num) * STORAGE_BLK_SIZ + k;
+			if(_cur_addr < FL_END_ADDR) _cur_word = flash_read(_cur_addr);
+
+			for(uint8_t i = 0; i < 4; i++)
+			{
+				buf[blk_num * STORAGE_BLK_SIZ + k + i] = (uint8_t)(_cur_word & 0xFF);
+				_cur_word >>= 8;
+			}
+		}
+	}
+	*/
+
+	uint32_t read_word = 0;															// Считываемое слово из памяти
+	uint32_t flash_addr = 0;														// Текущий адрес чтения
+
+	for(uint32_t blkn=0; blkn<blk_len; blkn++)										// Перебор запрашиваемого числа блоков
+	{
+		for(uint32_t set=0; set<0x400; set+=4)										// С начала страницы памяти до ее конца
+		{
+			flash_addr = FL_START_ADDR + (blk_addr+blkn)*STORAGE_BLK_SIZ + set;		// Рассчитать текущий адрес памяти
+			if(flash_addr < FL_END_ADDR) read_word = flash_read(flash_addr);		// Считать слово по рассчитаному адресу
+
+			buf[blkn*STORAGE_BLK_SIZ+set+0] = read_word & 0xFF; 					// Положить часть слова в буфер
+			read_word = read_word >> 8;												// Сдвинуть слово вправо
+			buf[blkn*STORAGE_BLK_SIZ+set+1] = read_word & 0xFF;  					// Положить часть слова в буфер
+			read_word = read_word >> 8;												// Сдвинуть слово вправо
+			buf[blkn*STORAGE_BLK_SIZ+set+2] = read_word & 0xFF;  					// Положить часть слова в буфер
+			read_word = read_word >> 8;												// Сдвинуть слово вправо
+			buf[blkn*STORAGE_BLK_SIZ+set+3] = read_word & 0xFF; 					// Положить часть слова в буфер
+		}
+	}
+	return (USBD_OK);
   /* USER CODE END 6 */
 }
 
@@ -254,7 +291,58 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 7 */
-  return (USBD_OK);
+	/*
+	uint32_t _cur_addr = 0;
+	uint32_t _cur_word = 0;
+
+	for(uint32_t blk_num = 0; blk_num < blk_len; blk_num++)
+	{
+		_cur_addr = FL_START_ADDR + (blk_addr + blk_num) * STORAGE_BLK_SIZ;
+		if(_cur_addr < FL_END_ADDR) flash_erase_page(_cur_addr);
+
+		for(uint32_t k = 0; k < STORAGE_BLK_SIZ; k += 4)
+		{
+			_cur_addr += 4;
+			_cur_word = 0;
+
+			_cur_word += buf[blk_num * STORAGE_BLK_SIZ + k + 3];
+			_cur_word <<= 8;
+			_cur_word |= buf[blk_num * STORAGE_BLK_SIZ + k + 2];
+			_cur_word <<= 8;
+			_cur_word |= buf[blk_num * STORAGE_BLK_SIZ + k + 1];
+			_cur_word <<= 8;
+			_cur_word |= buf[blk_num * STORAGE_BLK_SIZ + k + 0];
+			//_cur_word <<= 8;
+
+			flash_write(_cur_addr, _cur_word);
+		}
+	}
+	*/
+
+	uint32_t write_word = 0;														// Считываемое слово из памяти
+	uint32_t flash_addr = 0;														// Текущий адрес чтения
+
+	for(uint32_t blkn=0; blkn<blk_len; blkn++)										// Перебор запрашиваемого числа блоков
+	{
+		flash_addr = FL_START_ADDR + (blk_addr+blkn)*STORAGE_BLK_SIZ;				// Рассчитать адрес памяти для стирания
+		if(flash_addr < FL_END_ADDR) flash_erase_page(flash_addr);					// Стереть страницу перед записью
+
+		for(uint32_t set=0; set<0x400; set+=4)										// С начала страницы памяти до ее конца
+		{
+			write_word  = buf[blkn*STORAGE_BLK_SIZ+set+3];							// Добавить к слову данные из буфера
+			write_word  = write_word << 8;											// Сдвинуть слово вплево
+			write_word += buf[blkn*STORAGE_BLK_SIZ+set+2];							// Добавить к слову данные из буфера
+			write_word  = write_word << 8;											// Сдвинуть слово вплево
+			write_word += buf[blkn*STORAGE_BLK_SIZ+set+1];							// Добавить к слову данные из буфера
+			write_word  = write_word << 8;											// Сдвинуть слово вплево
+			write_word += buf[blkn*STORAGE_BLK_SIZ+set+0];							// Добавить к слову данные из буфера
+
+			flash_addr = FL_START_ADDR + (blk_addr+blkn)*STORAGE_BLK_SIZ + set;		// Рассчитать текущий адрес памяти
+			if(flash_addr < FL_END_ADDR) flash_write(flash_addr, write_word);		// Записать полученное слово в память
+		}
+	}
+
+	return (USBD_OK);
   /* USER CODE END 7 */
 }
 

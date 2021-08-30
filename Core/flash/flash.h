@@ -2,6 +2,11 @@
 #define _FLASH_MY_H
 
 
+#define FL_START_ADDR 	0x08010000										// Начало памяти для хранения данных
+#define FL_END_ADDR 	0x08018000										// Конец памяти для хранения данных
+#define FL_PAGE_SIZ 	0x400											// Размер страницы
+#define FL_PAGE_NBR 	((FL_END_ADDR - FL_START_ADDR) / FL_PAGE_SIZ)	// Кол-во страниц
+
 #include "stm32f1xx_hal.h"
 
 
