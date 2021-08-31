@@ -139,6 +139,7 @@ int main(void)
   while (1)
   {
 	  //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+
 	  uint32_t _cur_tick = HAL_GetTick();
 
 	  if(led_reset_state_cnt > _cur_tick) led_reset_state_cnt = _cur_tick;

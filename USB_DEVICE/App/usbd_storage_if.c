@@ -80,6 +80,11 @@
 	#define STORAGE_BLK_SIZ                  FL_PAGE_SIZ
 #endif
 
+#ifdef USB_HS_MAX_PACKET_SIZE
+	#undef USB_HS_MAX_PACKET_SIZE
+	#define USB_HS_MAX_PACKET_SIZE 1024
+#endif
+
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
