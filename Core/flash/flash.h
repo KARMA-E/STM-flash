@@ -3,7 +3,7 @@
 
 #include "stm32f1xx_hal.h"
 
-#define FL_START_ADDR 		0x08007000										// Начало памяти для хранения данных
+#define FL_START_ADDR 		0x08008000										// Начало памяти для хранения данных
 #define FL_END_ADDR 		0x08020000										// Конец памяти для хранения данных
 #define FL_END_ADDR_REAL 	0x08020000
 #define FL_PAGE_SIZ 		0x400											// Размер страницы
