@@ -76,9 +76,10 @@
 	#undef STORAGE_BLK_SIZ
 
 	#define STORAGE_LUN_NBR                  1
-	#define STORAGE_BLK_NBR                  FL_PAGE_NBR
+	#define STORAGE_BLK_NBR                  FL_PAGE_NUM
 	#define STORAGE_BLK_SIZ                  FL_PAGE_SIZ
 #endif
+
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
@@ -188,6 +189,15 @@ USBD_StorageTypeDef USBD_Storage_Interface_fops_FS =
 int8_t STORAGE_Init_FS(uint8_t lun)
 {
   /* USER CODE BEGIN 2 */
+	work_state_flag = 1;
+
+	char _str_buf[100];
+	sprintf(_str_buf, "\r---- FLASH INIT ----\r");
+	sprintf(_str_buf + strlen(_str_buf), "Flash chip - internal MC memory\r");
+	sprintf(_str_buf + strlen(_str_buf), "Memory size: %d\rSectors qnt: %d\r\r", FL_MEM_SIZ, FL_PAGE_NUM);
+	flash_debug_print(_str_buf);
+
+
   return (USBD_OK);
   /* USER CODE END 2 */
 }
@@ -202,6 +212,12 @@ int8_t STORAGE_Init_FS(uint8_t lun)
 int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
 {
   /* USER CODE BEGIN 3 */
+	work_state_flag = 1;
+
+	char _str_buf[100];
+	sprintf(_str_buf, "\rGet memory size: %d and sectors qnt: %d\r\r", FL_MEM_SIZ, FL_PAGE_NUM);
+	flash_debug_print(_str_buf);
+
   *block_num  = STORAGE_BLK_NBR;
   *block_size = STORAGE_BLK_SIZ;
   return (USBD_OK);
@@ -245,6 +261,12 @@ int8_t STORAGE_IsWriteProtected_FS(uint8_t lun)
 int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 6 */
+	work_state_flag = 1;
+
+	char _str_buf[50];
+	sprintf(_str_buf, "READ  addr: %04d  qnt: %d\r", (unsigned int)blk_addr, (unsigned int)blk_len);
+	flash_debug_print(_str_buf);
+
 
 	uint32_t _cur_addr = 0;
 	uint32_t _cur_word = 0;
@@ -286,9 +308,14 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 7 */
+	work_state_flag = 1;
+
+	char _str_buf[50];
+	sprintf(_str_buf, "WRITE  addr: %04d  qnt: %d\r", (unsigned int)blk_addr, (unsigned int)blk_len);
+	flash_debug_print(_str_buf);
+
 
 	uint8_t _fl_erase = 1;
-
 	uint32_t _cur_addr = 0;
 	uint32_t _cur_word = 0;
 

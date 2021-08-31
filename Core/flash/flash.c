@@ -1,5 +1,11 @@
 #include "flash.h"
 
+extern UART_HandleTypeDef huart1;
+
+void flash_debug_print(char* x)
+{
+	HAL_UART_Transmit(&huart1, (uint8_t*)x, strlen((const char *)x), 100);
+}
 
 // Разблокировать
 void flash_unlock(void)

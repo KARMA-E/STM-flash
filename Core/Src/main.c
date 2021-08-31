@@ -45,6 +45,8 @@
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 
+UART_HandleTypeDef huart1;
+
 /* USER CODE BEGIN PV */
 uint32_t test_tmp = 0;
 /* USER CODE END PV */
@@ -54,6 +56,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 extern USBD_HandleTypeDef hUsbDeviceFS;
 /* USER CODE END PFP */
@@ -94,7 +97,10 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   //MX_USB_DEVICE_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  	GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
+
   	HAL_TIM_Base_Init(&htim2);
   	HAL_TIM_Base_Start(&htim2);
   	HAL_TIM_Base_Init(&htim3);
@@ -108,11 +114,14 @@ int main(void)
   	HAL_GPIO_Init(GPIOA, &GPIO_USB);
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_RESET);
-  	HAL_Delay(1000);
+  	HAL_Delay(700);
 
   	MX_USB_DEVICE_Init();
 
   	flash_unlock();
+
+  	uint32_t led_reset_state_cnt = HAL_GetTick();
+  	uint32_t idle_state_cnt = HAL_GetTick();
 
   	/*
   	GPIOC->BSRR = GPIO_BSRR_BS13;
@@ -130,8 +139,34 @@ int main(void)
   while (1)
   {
 	  //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-	  GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
-	  HAL_Delay(50);
+	  uint32_t _cur_tick = HAL_GetTick();
+
+	  if(led_reset_state_cnt > _cur_tick) led_reset_state_cnt = _cur_tick;
+	  if(idle_state_cnt > _cur_tick) led_reset_state_cnt = _cur_tick;
+
+
+	  if(led_reset_state_cnt + 50 < HAL_GetTick())
+	  {
+		  GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
+		  led_reset_state_cnt = HAL_GetTick();
+	  }
+
+
+	  if(idle_state_cnt + 4000 < HAL_GetTick())
+	  {
+		  if(work_state_flag == 1)
+		  {
+			  work_state_flag = 0;
+		  }
+		  else
+		  {
+			  flash_debug_print("Idle state\r");
+		  }
+
+		  idle_state_cnt = HAL_GetTick();
+	  }
+
+
 
     /* USER CODE END WHILE */
 
@@ -277,6 +312,39 @@ static void MX_TIM3_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 921600;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -289,6 +357,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
