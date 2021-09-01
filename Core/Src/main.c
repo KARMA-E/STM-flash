@@ -99,6 +99,8 @@ int main(void)
   //MX_USB_DEVICE_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  	flash_debug_print("\r\r\rPower ON. Wait USB deinit\r");
+
   	GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
 
   	HAL_TIM_Base_Init(&htim2);
@@ -114,7 +116,14 @@ int main(void)
   	HAL_GPIO_Init(GPIOA, &GPIO_USB);
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_RESET);
-  	HAL_Delay(700);
+
+  	for(uint16_t i=0; i<40; i++)
+  	{
+  		HAL_Delay(20);
+  		flash_debug_print("*");
+  	}
+  	flash_debug_print("\rUSB start\r\r");
+
 
   	MX_USB_DEVICE_Init();
 
