@@ -29,6 +29,15 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+#define LED_PIN_NUM		GPIO_PIN_13
+#define LED_PIN_PORT	GPIOC
+#define LED_SET			(LED_PIN_PORT->BSRR = LED_PIN_NUM)
+#define LED_RES			(LED_PIN_PORT->BSRR = (LED_PIN_NUM << 16))
+
+#define CS_PIN_NUM		GPIO_PIN_0
+#define CS_PIN_PORT		GPIOB
+#define CS_SET			(CS_PIN_PORT->BSRR = CS_PIN_NUM)
+#define CS_RES			(CS_PIN_PORT->BSRR = (CS_PIN_NUM << 16))
 
 /* USER CODE END PTD */
 
@@ -99,12 +108,13 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-  MX_USB_DEVICE_Init();
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+
   	flash_debug_print("\r\r\rPower ON. Wait USB deinit\r");
 
+  	CS_SET;
   	GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
 
   	HAL_TIM_Base_Init(&htim2);
@@ -151,12 +161,37 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  //LED_SET;
+	  //HAL_Delay(200);
+	  //LED_RES;
+	  //HAL_Delay(200);
 	  //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 
-	  uint32_t _cur_tick = HAL_GetTick();
+	  HAL_Delay(200);
 
-	  if(led_reset_state_cnt > _cur_tick) led_reset_state_cnt = _cur_tick;
-	  if(idle_state_cnt > _cur_tick) led_reset_state_cnt = _cur_tick;
+	  uint8_t spi_buf_tx[10];
+	  uint8_t spi_buf_rx[10];
+
+	  spi_buf_tx[0] = 0x90;
+	  spi_buf_tx[1] = 0x0;
+	  spi_buf_tx[2] = 0x0;
+	  spi_buf_tx[3] = 0x0;
+
+
+	  CS_RES;
+	  HAL_SPI_Transmit(&hspi1, spi_buf_tx, 4, 100);
+	  HAL_SPI_Receive(&hspi1, spi_buf_rx, 2, 100);
+	  CS_SET;
+
+	  char str_buf[100];
+	  sprintf(str_buf, "MID: 0x%X DID: 0x%X\r", spi_buf_rx[0], spi_buf_rx[1]);
+	  flash_debug_print(str_buf);
+
+
+	  uint32_t cur_tick = HAL_GetTick();
+
+	  if(led_reset_state_cnt > cur_tick) led_reset_state_cnt = cur_tick;
+	  if(idle_state_cnt > cur_tick) led_reset_state_cnt = cur_tick;
 
 
 	  if(led_reset_state_cnt + 50 < HAL_GetTick())
