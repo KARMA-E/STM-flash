@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "flash.h"
+#include "ftl.h"
 #include "stm32f1xx_it.h"
 /* USER CODE END Includes */
 
@@ -34,10 +34,8 @@
 #define LED_SET			(LED_PIN_PORT->BSRR = LED_PIN_NUM)
 #define LED_RES			(LED_PIN_PORT->BSRR = (LED_PIN_NUM << 16))
 
-#define CS_PIN_NUM		GPIO_PIN_0
-#define CS_PIN_PORT		GPIOB
-#define CS_SET			(CS_PIN_PORT->BSRR = CS_PIN_NUM)
-#define CS_RES			(CS_PIN_PORT->BSRR = (CS_PIN_NUM << 16))
+#define TIME_START_USEC 	TIM2->CNT = 0; TIM3->CNT = 0;
+#define TIME_GET_USEC		(TIM3->CNT + (10000 * TIM2->CNT))
 
 /* USER CODE END PTD */
 
@@ -75,7 +73,8 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+extern uint8_t _cur_block_buf[];
+extern int32_t _cur_block_num;
 /* USER CODE END 0 */
 
 /**
@@ -108,13 +107,13 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
+  //MX_USB_DEVICE_Init();
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
   	flash_debug_print("\r\r\rPower ON. Wait USB deinit\r");
 
-  	CS_SET;
   	GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
 
   	HAL_TIM_Base_Init(&htim2);
@@ -140,80 +139,92 @@ int main(void)
 
 
   	MX_USB_DEVICE_Init();
-
   	flash_unlock();
+  	W25Q80_init(&hspi1);
 
   	uint32_t led_reset_state_cnt = HAL_GetTick();
   	uint32_t idle_state_cnt = HAL_GetTick();
 
-  	/*
+
+  	uint8_t data[256];
+  	for(int i=0; i<256; i++) data[i] = i/2;
+
+
+ /*
+  	W25Q80_erase_block(0x00E000);					// 27 480 us
+	while(W25Q80_get_status() & W25Q_STAT_BUSY);
+
+	W25Q80_write_page(0x00EF00, data);				// 486 us
+	while(W25Q80_get_status() & W25Q_STAT_BUSY);
+
+
   	GPIOC->BSRR = GPIO_BSRR_BS13;
   	TIME_START_USEC;
   	flash_erase_page(0x08010000);
   	test_tmp = TIME_GET_USEC;
   	GPIOC->BSRR = GPIO_BSRR_BR13;
-  	*/
 
+
+  	for(int j=0; j<400; j++)
+	{
+		uint8_t buf[256];
+		W25Q80_read_page(W25Q_PAGE_SIZ * j, buf);				// 728 us
+		while(W25Q80_get_status() & W25Q_STAT_BUSY);
+
+		char str_buf[100];
+		sprintf(str_buf, "№%d ", j);
+		flash_debug_print(str_buf);
+
+		for(int i=0; i<256; i++)
+		{
+			sprintf(str_buf, "%c ", buf[i]);
+			flash_debug_print(str_buf);
+		}
+
+		sprintf(str_buf, "\r\r");
+		flash_debug_print(str_buf);
+	}
+*/
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-	  //LED_SET;
-	  //HAL_Delay(200);
-	  //LED_RES;
-	  //HAL_Delay(200);
-	  //HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-
-	  HAL_Delay(200);
-
-	  uint8_t spi_buf_tx[10];
-	  uint8_t spi_buf_rx[10];
-
-	  spi_buf_tx[0] = 0x90;
-	  spi_buf_tx[1] = 0x0;
-	  spi_buf_tx[2] = 0x0;
-	  spi_buf_tx[3] = 0x0;
+  	while (1)
+  	{
 
 
-	  CS_RES;
-	  HAL_SPI_Transmit(&hspi1, spi_buf_tx, 4, 100);
-	  HAL_SPI_Receive(&hspi1, spi_buf_rx, 2, 100);
-	  CS_SET;
+		//HAL_Delay(2000);
+		/*
+		*/
 
-	  char str_buf[100];
-	  sprintf(str_buf, "MID: 0x%X DID: 0x%X\r", spi_buf_rx[0], spi_buf_rx[1]);
-	  flash_debug_print(str_buf);
+		uint32_t cur_tick = HAL_GetTick();
 
-
-	  uint32_t cur_tick = HAL_GetTick();
-
-	  if(led_reset_state_cnt > cur_tick) led_reset_state_cnt = cur_tick;
-	  if(idle_state_cnt > cur_tick) led_reset_state_cnt = cur_tick;
+		if(led_reset_state_cnt > cur_tick) led_reset_state_cnt = cur_tick;
+		if(idle_state_cnt > cur_tick) led_reset_state_cnt = cur_tick;
 
 
-	  if(led_reset_state_cnt + 50 < HAL_GetTick())
-	  {
-		  GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
-		  led_reset_state_cnt = HAL_GetTick();
-	  }
+		if(led_reset_state_cnt + 50 < HAL_GetTick())
+		{
+			GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
+			led_reset_state_cnt = HAL_GetTick();
+		}
 
 
-	  if(idle_state_cnt + 4000 < HAL_GetTick())
-	  {
-		  if(work_state_flag == 1)
-		  {
-			  work_state_flag = 0;
-		  }
-		  else
-		  {
-			  flash_debug_print("Idle state\r");
-		  }
+		if(idle_state_cnt + 50 < HAL_GetTick())
+		{
+			if(FTL_get_work_state())
+			{
+				FTL_set_work_state(FTL_get_work_state() - 1);
+			}
+			else
+			{
+			  //flash_debug_print("Idle state\r");
+			  FTL_free_block_buf();
+			}
 
-		  idle_state_cnt = HAL_GetTick();
-	  }
+			idle_state_cnt = HAL_GetTick();
+		}
 
 
 
@@ -292,7 +303,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
