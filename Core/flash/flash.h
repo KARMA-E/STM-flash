@@ -11,9 +11,8 @@
 #define FL_PAGE_NUM 		(FL_MEM_SIZ / FL_PAGE_SIZ)	// Кол-во страниц
 
 
-uint8_t 	work_state_flag;
+void 		flash_debug_print(char* x);
 
-void 	flash_debug_print(char* x);
 
 void 		flash_unlock(void);									// Разблокировать FLASH
 void 		flash_lock();										// Заблокировать FLASH
