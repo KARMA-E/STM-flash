@@ -4,13 +4,16 @@
 #include "flash.h"
 #include "w25q80.h"
 
+#define FTL_USE_EXT_FLASH	(1u)
+#define FTL_DEBUG_ENABLE	(1u)
+
 #undef STORAGE_LUN_NBR
 #undef STORAGE_BLK_NBR
 #undef STORAGE_BLK_SIZ
 
-#define STORAGE_LUN_NBR			(1u)
+#define STORAGE_LUN_NBR		(1u)
 
-#if W25Q_USE_EXT
+#if FTL_USE_EXT_FLASH
 	#define STORAGE_BLK_SIZ		0x200
 	#define STORAGE_BLK_NBR		(W25Q_MEM_SIZ / STORAGE_BLK_SIZ)
 #else

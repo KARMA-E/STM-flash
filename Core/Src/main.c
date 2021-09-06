@@ -146,11 +146,10 @@ int main(void)
   	uint32_t idle_state_cnt = HAL_GetTick();
 
 
+  	/*
   	uint8_t data[256];
   	for(int i=0; i<256; i++) data[i] = i/2;
 
-
- /*
   	W25Q80_erase_block(0x00E000);					// 27 480 us
 	while(W25Q80_get_status() & W25Q_STAT_BUSY);
 

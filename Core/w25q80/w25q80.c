@@ -13,6 +13,7 @@
 #define _W25Q_CMD_WR_STAT		(0x01)
 #define _W25Q_CMD_PG_PROG		(0x02)
 #define _W25Q_CMD_ERASE_SECT	(0x20)
+#define _W25Q_CMD_ERASE_BLOCK	(0xD8)
 #define _W25Q_CMD_RD_DATA		(0x03)
 #define _W25Q_CMD_FAST_DATA		(0x0B)
 
@@ -56,7 +57,7 @@ static uint8_t _get_status(void)
 	uint8_t command = _W25Q_CMD_RD_STAT1;
 
 	_CS_RES;
-	_spi_write( (uint8_t*)&command, 1);
+	_spi_write((uint8_t*)&command, 1);
 	_spi_read((uint8_t*)&status, 1);
 	_CS_SET;
 
@@ -65,12 +66,12 @@ static uint8_t _get_status(void)
 
 uint8_t W25Q80_erase_block(uint32_t addr)
 {
-	while(_get_status() & W25Q_STAT_BUSY) {;}
-
 	uint32_t tmp_addr = addr;
 	uint8_t cmd_buf[4];
 
 	cmd_buf[0] = _W25Q_CMD_WREN;
+
+	while(_get_status() & W25Q_STAT_BUSY) {;}
 
 	_CS_RES;
 	_spi_write(cmd_buf, 1);
@@ -83,6 +84,8 @@ uint8_t W25Q80_erase_block(uint32_t addr)
 	tmp_addr >>= 8;
 	cmd_buf[1] = tmp_addr & 0xFF;
 
+	while(_get_status() & W25Q_STAT_BUSY) {;}
+
 	_CS_RES;
 	_spi_write(cmd_buf, 4);
 	_CS_SET;
@@ -92,12 +95,12 @@ uint8_t W25Q80_erase_block(uint32_t addr)
 
 uint8_t W25Q80_write_page(uint32_t addr, uint8_t* data_buf)
 {
-	while(_get_status() & W25Q_STAT_BUSY) {;}
-
 	uint32_t tmp_addr = addr;
 	uint8_t cmd_buf[4];
 
 	cmd_buf[0] = _W25Q_CMD_WREN;
+
+	while(_get_status() & W25Q_STAT_BUSY) {;}
 
 	_CS_RES;
 	_spi_write(cmd_buf, 1);
@@ -109,6 +112,8 @@ uint8_t W25Q80_write_page(uint32_t addr, uint8_t* data_buf)
 	cmd_buf[2] = tmp_addr & 0xFF;
 	tmp_addr >>= 8;
 	cmd_buf[1] = tmp_addr & 0xFF;
+
+	while(_get_status() & W25Q_STAT_BUSY) {;}
 
 	_CS_RES;
 	_spi_write(cmd_buf, 4);
@@ -142,8 +147,39 @@ uint8_t W25Q80_read_page(uint32_t addr, uint8_t* data_buf)
 }
 
 
+uint8_t W25Q80_erase_all(void)
+{
+	uint32_t tmp_addr = 0;
+	uint8_t cmd_buf[4];
 
+	cmd_buf[0] = _W25Q_CMD_WREN;
 
+	while(_get_status() & W25Q_STAT_BUSY) {;}
+
+	_CS_RES;
+	_spi_write(cmd_buf, 1);
+	_CS_SET;
+
+	for(int i = 0; i < W25Q_END_ADDR / W25Q_TARGET_SIZ; i++)
+	{
+		cmd_buf[0] = _W25Q_CMD_ERASE_BLOCK;
+		cmd_buf[3] = tmp_addr & 0xFF;
+		tmp_addr >>= 8;
+		cmd_buf[2] = tmp_addr & 0xFF;
+		tmp_addr >>= 8;
+		cmd_buf[1] = tmp_addr & 0xFF;
+
+		while(_get_status() & W25Q_STAT_BUSY) {;}
+
+		_CS_RES;
+		_spi_write(cmd_buf, 4);
+		_CS_SET;
+
+		tmp_addr += W25Q_TARGET_SIZ;
+	}
+
+	return 0;
+}
 
 
 

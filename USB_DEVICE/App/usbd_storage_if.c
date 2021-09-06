@@ -182,11 +182,14 @@ int8_t STORAGE_Init_FS(uint8_t lun)
   /* USER CODE BEGIN 2 */
 	FTL_set_work_state(10);
 
+#if FTL_DEBUG_ENABLE
 	char _str_buf[100];
-	sprintf(_str_buf, "\r---- FLASH INIT ----\r");
-	sprintf(_str_buf + strlen(_str_buf), "Flash chip - internal MC memory\r");
-	sprintf(_str_buf + strlen(_str_buf), "Block size: %d\rSectors qnt: %d\r\r", STORAGE_BLK_SIZ, STORAGE_BLK_NBR);
+	sprintf(_str_buf, "\r---- FLASH INIT ----\r"
+					  "Flash chip - internal MC memory\r"
+					  "Block size: %d\rSectors qnt: %d\r\r",
+					  STORAGE_BLK_SIZ, STORAGE_BLK_NBR);
 	flash_debug_print(_str_buf);
+#endif
 
   return (USBD_OK);
   /* USER CODE END 2 */
@@ -203,10 +206,11 @@ int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_
 {
   /* USER CODE BEGIN 3 */
 	FTL_set_work_state(10);
-
+#if FTL_DEBUG_ENABLE
 	char _str_buf[100];
 	sprintf(_str_buf, "\rGet memory size: %d and sectors qnt: %d\r\r", FL_MEM_SIZ, FL_PAGE_NUM);
 	flash_debug_print(_str_buf);
+#endif
 
   *block_num  = STORAGE_BLK_NBR;
   *block_size = STORAGE_BLK_SIZ;
@@ -252,44 +256,26 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 {
   /* USER CODE BEGIN 6 */
 
+	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+	GPIOA->CRH ^= GPIO_CRH_MODE9_0;
+	GPIOA->BSRR = GPIO_BSRR_BR9;
+#if FTL_DEBUG_ENABLE
 	char _str_buf[50];
 	sprintf(_str_buf, "READ  addr: %04d  qnt: %d\r", (unsigned int)blk_addr, (unsigned int)blk_len);
 	flash_debug_print(_str_buf);
-
-#if W25Q_USE_EXT
-	for(uint16_t i=0; i<blk_len; i++)
-	{
-		FTL_storage_sector_read(blk_addr + i, buf + (i * STORAGE_BLK_SIZ));
-	}
-#else
-	uint32_t _cur_addr = 0;
-	uint32_t _cur_word = 0;
+#endif
 
 	for(uint32_t blk_num = 0; blk_num < blk_len; blk_num++)
 	{
-		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-		GPIOA->CRH ^= GPIO_CRH_MODE9_0;
-		GPIOA->BSRR = GPIO_BSRR_BR9;
 
-		if(blk_num + blk_addr >= ((FL_END_ADDR_REAL - FL_START_ADDR) / FL_PAGE_SIZ))
-		{
-			blk_addr = ((FL_END_ADDR_REAL - FL_START_ADDR) / FL_PAGE_SIZ) - 1;
-			blk_num = 0;
-		}
-
-		for(uint32_t k = 0; k < STORAGE_BLK_SIZ; k += 4)
-		{
-			_cur_addr = FL_START_ADDR + (blk_addr + blk_num) * STORAGE_BLK_SIZ + k;
-			if(_cur_addr < FL_END_ADDR) _cur_word = flash_read(_cur_addr);
-
-			for(int i = 0; i < 4; i++)
-			{
-				buf[blk_num * STORAGE_BLK_SIZ + k + i] = (uint8_t)(_cur_word & 0xFF);
-				if(i != 3)_cur_word >>= 8;
-			}
-		}
-	}
+#if FTL_USE_EXT_FLASH
+		FTL_storage_sector_read(blk_addr + blk_num, buf + (blk_num * STORAGE_BLK_SIZ));
+#else
+		FLASH_sector_read(blk_addr + blk_num, buf + (blk_num * STORAGE_BLK_SIZ));
 #endif
+
+	}
+
 	return (USBD_OK);
   /* USER CODE END 6 */
 }
@@ -302,53 +288,23 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 7 */
-
+#if FTL_DEBUG_ENABLE
 	char _str_buf[50];
 	sprintf(_str_buf, "WRITE  addr: %04d  qnt: %d\r", (unsigned int)blk_addr, (unsigned int)blk_len);
 	flash_debug_print(_str_buf);
-
-#if W25Q_USE_EXT
-	for(uint16_t i=0; i<blk_len; i++)
-	{
-		FTL_storage_sector_write(blk_addr + i, buf + (i * STORAGE_BLK_SIZ));
-	}
-#else
-	uint8_t _fl_erase = 1;
-	uint32_t _cur_addr = 0;
-	uint32_t _cur_word = 0;
+#endif
 
 	for(uint32_t blk_num = 0; blk_num < blk_len; blk_num++)
 	{
-		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-		GPIOA->CRH ^= GPIO_CRH_MODE9_0;
-		GPIOA->BSRR = GPIO_BSRR_BS9;
 
-		if(blk_num + blk_addr >= ((FL_END_ADDR_REAL - FL_START_ADDR) / FL_PAGE_SIZ))
-		{
-			blk_addr = ((FL_END_ADDR_REAL - FL_START_ADDR) / FL_PAGE_SIZ) - 1;
-			blk_num = 0;
-			_fl_erase = 0;
-		}
-
-		_cur_addr = FL_START_ADDR + (blk_addr + blk_num) * STORAGE_BLK_SIZ;
-		if(_cur_addr < FL_END_ADDR && _fl_erase) flash_erase_page(_cur_addr);
-
-		for(uint32_t k = 0; k < STORAGE_BLK_SIZ; k += 4)
-		{
-			_cur_word = 0;
-
-			for(int8_t i = 3; i >= 0; i--)
-			{
-				_cur_word += buf[blk_num * STORAGE_BLK_SIZ + k + i];
-				if(i != 0) _cur_word <<= 8;
-			}
-
-			flash_write(_cur_addr, _cur_word);
-
-			_cur_addr += 4;
-		}
-	}
+#if FTL_USE_EXT_FLASH
+		FTL_storage_sector_write(blk_addr + blk_num, buf + (blk_num * STORAGE_BLK_SIZ));
+#else
+		FLASH_sector_write(blk_addr + blk_num, buf + (blk_num * STORAGE_BLK_SIZ));
 #endif
+
+	}
+
 	return (USBD_OK);
   /* USER CODE END 7 */
 }
