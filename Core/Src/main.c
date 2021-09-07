@@ -37,6 +37,14 @@
 #define TIME_START_USEC 	TIM2->CNT = 0; TIM3->CNT = 0;
 #define TIME_GET_USEC		(TIM3->CNT + (10000 * TIM2->CNT))
 
+typedef struct flow_control_s
+{
+	uint32_t size_prev;
+	uint32_t size_cur;
+	uint32_t size_diff;
+	uint32_t speed_cur;
+}flow_control_s;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -73,8 +81,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-extern uint8_t _cur_block_buf[];
-extern int32_t _cur_block_num;
+extern uint8_t receive_byte;
 /* USER CODE END 0 */
 
 /**
@@ -137,13 +144,18 @@ int main(void)
   	}
   	flash_debug_print("\rUSB start\r\r");
 
-
-  	MX_USB_DEVICE_Init();
   	flash_unlock();
+  	W25Q80_init(&hspi1);
+  	MX_USB_DEVICE_Init();
   	W25Q80_init(&hspi1);
 
   	uint32_t led_reset_state_cnt = HAL_GetTick();
   	uint32_t idle_state_cnt = HAL_GetTick();
+
+  	HAL_UART_Receive_IT(&huart1, &receive_byte, 1);
+  	flow_control_s read, write;
+  	read.size_prev = 0;
+  	write.size_prev = 0;
 
 
   	/*
@@ -199,8 +211,31 @@ int main(void)
 
 		if(led_reset_state_cnt + 50 < HAL_GetTick())
 		{
-			GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
+			//GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
+
+			uint32_t time_delay = HAL_GetTick() - led_reset_state_cnt;
 			led_reset_state_cnt = HAL_GetTick();
+
+			read.size_cur = FTL_bytes_read_qty();
+			read.size_diff = read.size_cur - read.size_prev;
+			read.speed_cur = (read.size_diff * 1000) / time_delay;
+			read.size_prev = read.size_cur;
+
+			write.size_cur = FTL_bytes_write_qty();
+			write.size_diff = write.size_cur - write.size_prev;
+			write.speed_cur = (write.size_diff * 1000) / time_delay;
+			write.size_prev = write.size_cur;
+
+
+			char str_buf[100];
+
+			sprintf(str_buf, "Read: %d %03d B  Speed: %d %03d B/s\r", read.size_cur / 1000, read.size_cur % 1000,
+																		read.speed_cur / 1000, read.speed_cur % 1000);
+			flash_debug_print(str_buf);
+
+			sprintf(str_buf, "Write: %d %03d B  Speed: %d %03d B/s\r\r",  write.size_cur / 1000, write.size_cur % 1000,
+																			write.speed_cur / 1000, write.speed_cur % 1000);
+			flash_debug_print(str_buf);
 		}
 
 
@@ -217,6 +252,23 @@ int main(void)
 			}
 
 			idle_state_cnt = HAL_GetTick();
+		}
+
+
+		if(receive_byte != 0)
+		{
+			if(receive_byte == 'r')
+			{
+				FTL_qty_reset();
+			}
+			else if(receive_byte == 'f')
+			{
+				flash_debug_print("Erase start\r");
+				W25Q80_erase_all();
+				flash_debug_print("Erase finish\r");
+			}
+
+			receive_byte = 0;
 		}
 
 

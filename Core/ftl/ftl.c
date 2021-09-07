@@ -9,6 +9,10 @@ uint8_t _cur_block_buf[W25Q_BLOCK_SIZ] = {0};
 int32_t _cur_block_num = _BLOCK_BUF_SAVED;
 
 
+uint32_t _sectors_read_cnt = 0;
+uint32_t _sectors_write_cnt = 0;
+
+
 static void _load_block_buf(void)
 {
 	uint32_t start_addr = W25Q_START_ADDR + (_cur_block_num * W25Q_BLOCK_SIZ);
@@ -32,10 +36,17 @@ static void _save_block_buf(void)
 }
 
 
-void 	FTL_set_work_state(uint8_t state) {_work_state_flag = state;}
+void 		FTL_set_work_state(uint8_t state) 	{ _work_state_flag = state; }
+uint8_t 	FTL_get_work_state(void) 			{ return _work_state_flag; }
+uint32_t 	FTL_bytes_read_qty(void)			{ return _sectors_read_cnt * STORAGE_BLK_SIZ; }
+uint32_t 	FTL_bytes_write_qty(void)			{ return _sectors_write_cnt * STORAGE_BLK_SIZ; }
 
-uint8_t FTL_get_work_state(void) { return _work_state_flag;}
 
+void FTL_qty_reset(void)
+{
+	_sectors_read_cnt = 0;
+	_sectors_write_cnt = 0;
+}
 
 void FTL_free_block_buf(void)
 {
@@ -48,6 +59,8 @@ void FTL_free_block_buf(void)
 
 void FTL_storage_sector_write(uint32_t sect_num, uint8_t* buf)
 {
+	_sectors_write_cnt++;
+
 	FTL_set_work_state(_WORK_STATE_VAL);
 
 #if FTL_USE_EXT_FLASH
@@ -97,7 +110,8 @@ void FTL_storage_sector_write(uint32_t sect_num, uint8_t* buf)
 
 void FTL_storage_sector_read(uint32_t sect_num, uint8_t* buf)
 {
-	FTL_set_work_state(_WORK_STATE_VAL);
+	_sectors_read_cnt++;
+	_work_state_flag = _WORK_STATE_VAL;
 
 #if FTL_USE_EXT_FLASH
 

@@ -42,15 +42,6 @@ static void _spi_read(uint8_t* buf, uint16_t size)
 	HAL_SPI_Receive(_p_hspi, buf, size, 100);
 }
 
-
-uint8_t W25Q80_init(SPI_HandleTypeDef* hspi)
-{
-	_CS_SET;
-	_p_hspi = hspi;
-
-	return 0;
-}
-
 static uint8_t _get_status(void)
 {
 	uint8_t status;
@@ -64,18 +55,32 @@ static uint8_t _get_status(void)
 	return status;
 }
 
-uint8_t W25Q80_erase_block(uint32_t addr)
+static inline void _write_enable(void)
 {
-	uint32_t tmp_addr = addr;
-	uint8_t cmd_buf[4];
-
-	cmd_buf[0] = _W25Q_CMD_WREN;
+	uint8_t cmd_buf = _W25Q_CMD_WREN;
 
 	while(_get_status() & W25Q_STAT_BUSY) {;}
 
 	_CS_RES;
-	_spi_write(cmd_buf, 1);
+	_spi_write((uint8_t*)&cmd_buf, 1);
 	_CS_SET;
+}
+
+
+uint8_t W25Q80_init(SPI_HandleTypeDef* hspi)
+{
+	_CS_SET;
+	_p_hspi = hspi;
+
+	return 0;
+}
+
+uint8_t W25Q80_erase_block(uint32_t addr)
+{
+	_write_enable();
+
+	uint32_t tmp_addr = addr;
+	uint8_t cmd_buf[4];
 
 	cmd_buf[0] = _W25Q_CMD_ERASE_SECT;
 	cmd_buf[3] = tmp_addr & 0xFF;
@@ -95,16 +100,10 @@ uint8_t W25Q80_erase_block(uint32_t addr)
 
 uint8_t W25Q80_write_page(uint32_t addr, uint8_t* data_buf)
 {
+	_write_enable();
+
 	uint32_t tmp_addr = addr;
 	uint8_t cmd_buf[4];
-
-	cmd_buf[0] = _W25Q_CMD_WREN;
-
-	while(_get_status() & W25Q_STAT_BUSY) {;}
-
-	_CS_RES;
-	_spi_write(cmd_buf, 1);
-	_CS_SET;
 
 	cmd_buf[0] = _W25Q_CMD_PG_PROG;
 	cmd_buf[3] = tmp_addr & 0xFF;
@@ -125,8 +124,6 @@ uint8_t W25Q80_write_page(uint32_t addr, uint8_t* data_buf)
 
 uint8_t W25Q80_read_page(uint32_t addr, uint8_t* data_buf)
 {
-	while(_get_status() & W25Q_STAT_BUSY) {;}
-
 	uint32_t tmp_addr = addr;
 	uint8_t cmd_buf[5];
 
@@ -137,6 +134,8 @@ uint8_t W25Q80_read_page(uint32_t addr, uint8_t* data_buf)
 	tmp_addr >>= 8;
 	cmd_buf[1] = tmp_addr & 0xFF;
 	cmd_buf[4] = 0;
+
+	while(_get_status() & W25Q_STAT_BUSY) {;}
 
 	_CS_RES;
 	_spi_write(cmd_buf, 5);
@@ -149,16 +148,10 @@ uint8_t W25Q80_read_page(uint32_t addr, uint8_t* data_buf)
 
 uint8_t W25Q80_erase_all(void)
 {
+	_write_enable();
+
 	uint32_t tmp_addr = 0;
 	uint8_t cmd_buf[4];
-
-	cmd_buf[0] = _W25Q_CMD_WREN;
-
-	while(_get_status() & W25Q_STAT_BUSY) {;}
-
-	_CS_RES;
-	_spi_write(cmd_buf, 1);
-	_CS_SET;
 
 	for(int i = 0; i < W25Q_END_ADDR / W25Q_TARGET_SIZ; i++)
 	{
