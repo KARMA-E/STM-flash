@@ -267,13 +267,7 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 
 	for(uint32_t blk_num = 0; blk_num < blk_len; blk_num++)
 	{
-
-#if FTL_USE_EXT_FLASH
 		FTL_storage_sector_read(blk_addr + blk_num, buf + (blk_num * STORAGE_BLK_SIZ));
-#else
-		FLASH_sector_read(blk_addr + blk_num, buf + (blk_num * STORAGE_BLK_SIZ));
-#endif
-
 	}
 
 	return (USBD_OK);
@@ -296,13 +290,7 @@ int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t b
 
 	for(uint32_t blk_num = 0; blk_num < blk_len; blk_num++)
 	{
-
-#if FTL_USE_EXT_FLASH
 		FTL_storage_sector_write(blk_addr + blk_num, buf + (blk_num * STORAGE_BLK_SIZ));
-#else
-		FLASH_sector_write(blk_addr + blk_num, buf + (blk_num * STORAGE_BLK_SIZ));
-#endif
-
 	}
 
 	return (USBD_OK);

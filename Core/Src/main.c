@@ -191,12 +191,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   	while (1)
   	{
-
-
-		//HAL_Delay(2000);
-		/*
-		*/
-
 		uint32_t cur_tick = HAL_GetTick();
 
 		if(led_reset_state_cnt > cur_tick) led_reset_state_cnt = cur_tick;

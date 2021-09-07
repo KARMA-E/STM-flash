@@ -15,7 +15,9 @@ void 		flash_debug_print(char* x);
 void 		flash_unlock(void);
 void 		flash_lock(void);
 
-void		FLASH_sector_write(uint32_t sect_num, uint8_t* buf);
-void		FLASH_sector_read(uint32_t sect_num, uint8_t* buf);
+uint8_t 	flash_ready(void);
+void 		flash_erase_page(uint32_t addr);
+uint32_t 	flash_read(uint32_t addr);
+void 		flash_write(uint32_t addr,uint32_t data);
 
 #endif
