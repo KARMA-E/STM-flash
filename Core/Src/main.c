@@ -230,11 +230,11 @@ int main(void)
 			char str_buf[100];
 
 			sprintf(str_buf, "Read: %d %03d B  Speed: %d %03d B/s\r", read.size_cur / 1000, read.size_cur % 1000,
-																		read.speed_cur / 1000, read.speed_cur % 1000);
+																	  read.speed_cur / 1000, read.speed_cur % 1000);
 			flash_debug_print(str_buf);
 
-			sprintf(str_buf, "Write: %d %03d B  Speed: %d %03d B/s\r\r",  write.size_cur / 1000, write.size_cur % 1000,
-																			write.speed_cur / 1000, write.speed_cur % 1000);
+			sprintf(str_buf, "Write: %d %03d B  Speed: %d %03d B/s\r\r", write.size_cur / 1000, write.size_cur % 1000,
+																		 write.speed_cur / 1000, write.speed_cur % 1000);
 			flash_debug_print(str_buf);
 		}
 

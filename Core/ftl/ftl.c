@@ -130,8 +130,10 @@ void FTL_storage_sector_read(uint32_t sect_num, uint8_t* buf)
 	{
 		uint32_t start_addr = W25Q_START_ADDR + (sect_num * STORAGE_BLK_SIZ);
 
-		W25Q80_read_page(start_addr, (buf));
-		W25Q80_read_page(start_addr + W25Q_PAGE_SIZ, (buf + W25Q_PAGE_SIZ));
+		for(uint16_t offset=0; offset < STORAGE_BLK_SIZ; offset += W25Q_PAGE_SIZ)
+		{
+			W25Q80_read_page(start_addr + offset, (buf + offset));
+		}
 	}
 
 #else
