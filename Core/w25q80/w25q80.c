@@ -1,10 +1,4 @@
 #include "w25q80.h"
-#include "flash.h"
-
-#define _CS_PIN_NUM		GPIO_PIN_3
-#define _CS_PIN_PORT	GPIOA
-#define _CS_SET			(_CS_PIN_PORT->BSRR = _CS_PIN_NUM)
-#define _CS_RES			(_CS_PIN_PORT->BSRR = (_CS_PIN_NUM << 16))
 
 #define _W25Q_CMD_WREN			(0x06)
 #define _W25Q_CMD_WRDIS			(0x04)
@@ -19,7 +13,7 @@
 
 
 SPI_HandleTypeDef* _p_hspi;
-
+uint8_t _cs_cur = 0;
 
 #pragma pack(push,1)
 
@@ -42,15 +36,15 @@ static void _spi_read(uint8_t* buf, uint16_t size)
 	HAL_SPI_Receive(_p_hspi, buf, size, 100);
 }
 
-static uint8_t _get_status(void)
+static uint8_t _get_status()
 {
 	uint8_t status;
 	uint8_t command = _W25Q_CMD_RD_STAT1;
 
-	_CS_RES;
+	CS_reset(_cs_cur);
 	_spi_write((uint8_t*)&command, 1);
 	_spi_read((uint8_t*)&status, 1);
-	_CS_SET;
+	CS_set();
 
 	return status;
 }
@@ -61,18 +55,23 @@ static inline void _write_enable(void)
 
 	while(_get_status() & W25Q_STAT_BUSY) {;}
 
-	_CS_RES;
+	CS_reset(_cs_cur);
 	_spi_write((uint8_t*)&cmd_buf, 1);
-	_CS_SET;
+	CS_set();
 }
 
 
 uint8_t W25Q80_init(SPI_HandleTypeDef* hspi)
 {
-	_CS_SET;
+	CS_set();
 	_p_hspi = hspi;
 
 	return 0;
+}
+
+void W25Q80_set_cs_num(uint8_t cs)
+{
+	_cs_cur = cs;
 }
 
 uint8_t W25Q80_erase_block(uint32_t addr)
@@ -91,9 +90,9 @@ uint8_t W25Q80_erase_block(uint32_t addr)
 
 	while(_get_status() & W25Q_STAT_BUSY) {;}
 
-	_CS_RES;
+	CS_reset(_cs_cur);
 	_spi_write(cmd_buf, 4);
-	_CS_SET;
+	CS_set();
 
 	return 0;
 }
@@ -114,10 +113,10 @@ uint8_t W25Q80_write_page(uint32_t addr, uint8_t* data_buf)
 
 	while(_get_status() & W25Q_STAT_BUSY) {;}
 
-	_CS_RES;
+	CS_reset(_cs_cur);
 	_spi_write(cmd_buf, 4);
 	_spi_write(data_buf, 256);
-	_CS_SET;
+	CS_set();
 
 	return 0;
 }
@@ -137,10 +136,10 @@ uint8_t W25Q80_read_page(uint32_t addr, uint8_t* data_buf)
 
 	while(_get_status() & W25Q_STAT_BUSY) {;}
 
-	_CS_RES;
+	CS_reset(_cs_cur);
 	_spi_write(cmd_buf, 5);
 	_spi_read(data_buf, 256);
-	_CS_SET;
+	CS_set();
 
 	return 0;
 }
@@ -164,9 +163,9 @@ uint8_t W25Q80_erase_all(void)
 
 		while(_get_status() & W25Q_STAT_BUSY) {;}
 
-		_CS_RES;
+		CS_reset(_cs_cur);
 		_spi_write(cmd_buf, 4);
-		_CS_SET;
+		CS_set();
 
 		tmp_addr += W25Q_TARGET_SIZ;
 	}

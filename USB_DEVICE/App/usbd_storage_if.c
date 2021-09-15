@@ -180,7 +180,7 @@ USBD_StorageTypeDef USBD_Storage_Interface_fops_FS =
 int8_t STORAGE_Init_FS(uint8_t lun)
 {
   /* USER CODE BEGIN 2 */
-	FTL_set_work_state(10);
+	FTL_set_idle_cnt(IDLE_WAIT_VAL);
 
 #if FTL_DEBUG_ENABLE
 	char _str_buf[100];
@@ -205,7 +205,7 @@ int8_t STORAGE_Init_FS(uint8_t lun)
 int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_size)
 {
   /* USER CODE BEGIN 3 */
-	FTL_set_work_state(10);
+	FTL_set_idle_cnt(IDLE_WAIT_VAL);
 #if FTL_DEBUG_ENABLE
 	char _str_buf[100];
 	sprintf(_str_buf, "\rGet memory size: %d and sectors qnt: %d\r\r", FL_MEM_SIZ, FL_PAGE_NUM);

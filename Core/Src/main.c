@@ -24,18 +24,11 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "ftl.h"
-#include "stm32f1xx_it.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define LED_PIN_NUM		GPIO_PIN_12
-#define LED_PIN_PORT	GPIOB
-#define LED_SET			(LED_PIN_PORT->BSRR = LED_PIN_NUM)
-#define LED_RES			(LED_PIN_PORT->BSRR = (LED_PIN_NUM << 16))
 
-#define TIME_START_USEC 	TIM2->CNT = 0; TIM3->CNT = 0;
-#define TIME_GET_USEC		(TIM3->CNT + (10000 * TIM2->CNT))
 
 typedef struct flow_control_s
 {
@@ -114,7 +107,7 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-  MX_USB_DEVICE_Init();
+  //MX_USB_DEVICE_Init();
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
@@ -142,15 +135,17 @@ int main(void)
   	}
   	flash_debug_print("\rUSB start\r\r");
 
-  	flash_unlock();
-  	W25Q80_init(&hspi1);
+	flash_unlock();
+	W25Q80_init(&hspi1);
+  	FTL_init();
+
   	MX_USB_DEVICE_Init();
-  	W25Q80_init(&hspi1);
 
   	uint32_t led_reset_state_cnt = HAL_GetTick();
   	uint32_t idle_state_cnt = HAL_GetTick();
 
   	HAL_UART_Receive_IT(&huart1, &receive_byte, 1);
+
   	flow_control_s read, write;
   	read.size_prev = 0;
   	write.size_prev = 0;
@@ -203,30 +198,58 @@ int main(void)
   	{
 		uint32_t cur_tick = HAL_GetTick();
 
-		if(led_reset_state_cnt > cur_tick) led_reset_state_cnt = cur_tick;
-		if(idle_state_cnt > cur_tick) led_reset_state_cnt = cur_tick;
+		if(led_reset_state_cnt 	> cur_tick) 	led_reset_state_cnt = cur_tick;
+		if(idle_state_cnt 		> cur_tick) 	led_reset_state_cnt = cur_tick;
 
 
-		if(led_reset_state_cnt + 50 < HAL_GetTick())
+
+		if(led_reset_state_cnt + 30 < HAL_GetTick())
 		{
 			led_reset_state_cnt = HAL_GetTick();
+
+			if(FTL_check_write_act(0))
+			{
+				if(!GPIO_READ(LED_RED_PORT, LED_RED_PIN))
+				{
+					GPIO_SET(LED_RED_PORT, LED_RED_PIN);
+				}
+				else
+				{
+					GPIO_RESET(LED_RED_PORT, LED_RED_PIN);
+					FTL_check_write_act(1);
+				}
+			}
+
+			if(FTL_check_read_act(0))
+			{
+				if(!GPIO_READ(LED_BLUE_PORT, LED_BLUE_PIN))
+				{
+					GPIO_SET(LED_BLUE_PORT, LED_BLUE_PIN);
+				}
+				else
+				{
+					GPIO_RESET(LED_BLUE_PORT, LED_BLUE_PIN);
+					FTL_check_read_act(1);
+				}
+			}
 		}
 
 
-		if(idle_state_cnt + 50 < HAL_GetTick())
-		{
-			uint32_t time_delay = HAL_GetTick() - led_reset_state_cnt;
 
-			read.size_cur = FTL_bytes_read_qty();
+		if(idle_state_cnt + 100 < HAL_GetTick())
+		{
+			uint32_t time_delay = HAL_GetTick() - idle_state_cnt;
+
+			read.size_cur  = FTL_bytes_read_qty();
+			write.size_cur = FTL_bytes_write_qty();
+			idle_state_cnt = HAL_GetTick();
+
 			read.size_diff = read.size_cur - read.size_prev;
 			read.speed_cur = (read.size_diff * 1000) / time_delay;
 			read.size_prev = read.size_cur;
-
-			write.size_cur = FTL_bytes_write_qty();
 			write.size_diff = write.size_cur - write.size_prev;
 			write.speed_cur = (write.size_diff * 1000) / time_delay;
 			write.size_prev = write.size_cur;
-
 
 			char str_buf[100];
 
@@ -238,17 +261,14 @@ int main(void)
 					write.size_cur / 1000, write.size_cur % 1000, write.speed_cur / 1000, write.speed_cur % 1000);
 			flash_debug_print(str_buf);
 
-			if(FTL_get_work_state())
+			if(FTL_get_idle_cnt())
 			{
-				FTL_set_work_state(FTL_get_work_state() - 1);
+				FTL_set_idle_cnt(FTL_get_idle_cnt() - 1);
 			}
 			else
 			{
-			  //flash_debug_print("Idle state\r");
-			  FTL_free_block_buf();
+			 	FTL_free_block_buf();
 			}
-
-			idle_state_cnt = HAL_GetTick();
 		}
 
 
@@ -265,7 +285,6 @@ int main(void)
 				W25Q80_erase_all();
 				flash_debug_print("Erase finish\r");
 			}
-
 			receive_byte = 0;
 		}
 
