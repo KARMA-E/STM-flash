@@ -29,8 +29,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define LED_PIN_NUM		GPIO_PIN_13
-#define LED_PIN_PORT	GPIOC
+#define LED_PIN_NUM		GPIO_PIN_12
+#define LED_PIN_PORT	GPIOB
 #define LED_SET			(LED_PIN_PORT->BSRR = LED_PIN_NUM)
 #define LED_RES			(LED_PIN_PORT->BSRR = (LED_PIN_NUM << 16))
 
@@ -114,14 +114,12 @@ int main(void)
   MX_GPIO_Init();
   MX_TIM2_Init();
   MX_TIM3_Init();
-  //MX_USB_DEVICE_Init();
+  MX_USB_DEVICE_Init();
   MX_USART1_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
   	flash_debug_print("\r\r\rPower ON. Wait USB deinit\r");
-
-  	GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
 
   	HAL_TIM_Base_Init(&htim2);
   	HAL_TIM_Base_Start(&htim2);
@@ -211,10 +209,13 @@ int main(void)
 
 		if(led_reset_state_cnt + 50 < HAL_GetTick())
 		{
-			//GPIOA->CRH &= ~GPIO_CRH_MODE9_Msk;
-
-			uint32_t time_delay = HAL_GetTick() - led_reset_state_cnt;
 			led_reset_state_cnt = HAL_GetTick();
+		}
+
+
+		if(idle_state_cnt + 50 < HAL_GetTick())
+		{
+			uint32_t time_delay = HAL_GetTick() - led_reset_state_cnt;
 
 			read.size_cur = FTL_bytes_read_qty();
 			read.size_diff = read.size_cur - read.size_prev;
@@ -229,18 +230,14 @@ int main(void)
 
 			char str_buf[100];
 
-			sprintf(str_buf, "Read: %d %03d B  Speed: %d %03d B/s\r", read.size_cur / 1000, read.size_cur % 1000,
-																	  read.speed_cur / 1000, read.speed_cur % 1000);
+			sprintf(str_buf, "Read: %lu %03lu B  Speed: %lu %03lu B/s\r",
+					read.size_cur / 1000, read.size_cur % 1000, read.speed_cur / 1000, read.speed_cur % 1000);
 			flash_debug_print(str_buf);
 
-			sprintf(str_buf, "Write: %d %03d B  Speed: %d %03d B/s\r\r", write.size_cur / 1000, write.size_cur % 1000,
-																		 write.speed_cur / 1000, write.speed_cur % 1000);
+			sprintf(str_buf, "Write: %lu %03lu B  Speed: %lu %03lu B/s\r\r",
+					write.size_cur / 1000, write.size_cur % 1000, write.speed_cur / 1000, write.speed_cur % 1000);
 			flash_debug_print(str_buf);
-		}
 
-
-		if(idle_state_cnt + 50 < HAL_GetTick())
-		{
 			if(FTL_get_work_state())
 			{
 				FTL_set_work_state(FTL_get_work_state() - 1);
@@ -253,6 +250,7 @@ int main(void)
 
 			idle_state_cnt = HAL_GetTick();
 		}
+
 
 
 		if(receive_byte != 0)
@@ -295,7 +293,7 @@ void SystemClock_Config(void)
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV2;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
@@ -503,34 +501,37 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
 
-  /*Configure GPIO pin : PC13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12|GPIO_PIN_13, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : PC13 PC14 PC15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PB0 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PA9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9;
+  /*Configure GPIO pin : PA3 */
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB0 PB12 PB13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_12|GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 

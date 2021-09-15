@@ -1,8 +1,8 @@
 #include "w25q80.h"
 #include "flash.h"
 
-#define _CS_PIN_NUM		GPIO_PIN_0
-#define _CS_PIN_PORT	GPIOB
+#define _CS_PIN_NUM		GPIO_PIN_3
+#define _CS_PIN_PORT	GPIOA
 #define _CS_SET			(_CS_PIN_PORT->BSRR = _CS_PIN_NUM)
 #define _CS_RES			(_CS_PIN_PORT->BSRR = (_CS_PIN_NUM << 16))
 
