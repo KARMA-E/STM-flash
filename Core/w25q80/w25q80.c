@@ -1,4 +1,6 @@
 #include "w25q80.h"
+#include "hardware.h"
+
 
 #define _W25Q_CMD_WREN			(0x06)
 #define _W25Q_CMD_WRDIS			(0x04)
@@ -10,6 +12,7 @@
 #define _W25Q_CMD_ERASE_BLOCK	(0xD8)
 #define _W25Q_CMD_RD_DATA		(0x03)
 #define _W25Q_CMD_FAST_DATA		(0x0B)
+#define _W25Q_CMD_READ_ID		(0x90)
 
 
 SPI_HandleTypeDef* _p_hspi;
@@ -36,7 +39,7 @@ static void _spi_read(uint8_t* buf, uint16_t size)
 	HAL_SPI_Receive(_p_hspi, buf, size, 100);
 }
 
-static uint8_t _get_status()
+static uint8_t _get_status(void)
 {
 	uint8_t status;
 	uint8_t command = _W25Q_CMD_RD_STAT1;
@@ -67,6 +70,26 @@ uint8_t W25Q80_init(SPI_HandleTypeDef* hspi)
 	_p_hspi = hspi;
 
 	return 0;
+}
+
+uint16_t W25Q80_get_id(void)
+{
+	uint16_t id;
+	uint8_t cmd_buf[4];
+
+	cmd_buf[0] = _W25Q_CMD_READ_ID;
+	cmd_buf[1] = 0;
+	cmd_buf[2] = 0;
+	cmd_buf[3] = 0;
+
+	while(_get_status() & W25Q_STAT_BUSY) {;}
+
+	CS_reset(_cs_cur);
+	_spi_write(cmd_buf, 4);
+	_spi_read((uint8_t*)(&id), 2);
+	CS_set();
+
+	return id;
 }
 
 void W25Q80_set_cs_num(uint8_t cs)

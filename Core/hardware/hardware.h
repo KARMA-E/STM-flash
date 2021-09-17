@@ -3,7 +3,7 @@
 
 #include "stm32f1xx_hal.h"
 
-#define CS_QTY	2
+
 
 #define LED_BLUE_PIN			GPIO_PIN_12
 #define LED_BLUE_PORT			GPIOB

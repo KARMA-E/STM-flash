@@ -182,7 +182,7 @@ int8_t STORAGE_Init_FS(uint8_t lun)
   /* USER CODE BEGIN 2 */
 	FTL_set_idle_cnt(IDLE_WAIT_VAL);
 
-#if FTL_DEBUG_ENABLE
+#if DEBUG_ENABLE
 	char _str_buf[100];
 	sprintf(_str_buf, "\r---- FLASH INIT ----\r"
 					  "Flash chip - internal MC memory\r"
@@ -206,7 +206,7 @@ int8_t STORAGE_GetCapacity_FS(uint8_t lun, uint32_t *block_num, uint16_t *block_
 {
   /* USER CODE BEGIN 3 */
 	FTL_set_idle_cnt(IDLE_WAIT_VAL);
-#if FTL_DEBUG_ENABLE
+#if DEBUG_ENABLE
 	char _str_buf[100];
 	sprintf(_str_buf, "\rGet memory size: %d and sectors qnt: %d\r\r", FL_MEM_SIZ, FL_PAGE_NUM);
 	flash_debug_print(_str_buf);
@@ -256,10 +256,7 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 {
   /* USER CODE BEGIN 6 */
 
-	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
-	GPIOA->CRH ^= GPIO_CRH_MODE9_0;
-	GPIOA->BSRR = GPIO_BSRR_BR9;
-#if FTL_DEBUG_ENABLE
+#if DEBUG_ENABLE
 	char _str_buf[50];
 	sprintf(_str_buf, "READ  addr: %04d  qnt: %d\r", (unsigned int)blk_addr, (unsigned int)blk_len);
 	flash_debug_print(_str_buf);
@@ -282,7 +279,7 @@ int8_t STORAGE_Read_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t bl
 int8_t STORAGE_Write_FS(uint8_t lun, uint8_t *buf, uint32_t blk_addr, uint16_t blk_len)
 {
   /* USER CODE BEGIN 7 */
-#if FTL_DEBUG_ENABLE
+#if DEBUG_ENABLE
 	char _str_buf[50];
 	sprintf(_str_buf, "WRITE  addr: %04d  qnt: %d\r", (unsigned int)blk_addr, (unsigned int)blk_len);
 	flash_debug_print(_str_buf);

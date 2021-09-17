@@ -150,7 +150,15 @@ int main(void)
   	read.size_prev = 0;
   	write.size_prev = 0;
 
+  	char str_buf[100];
 
+  	for(uint8_t i = 0; i < CS_QTY; i++)
+  	{
+  		W25Q80_set_cs_num(i);
+  		uint16_t chip_id = W25Q80_get_id();
+  		sprintf(str_buf, "Chip #%d status: %04X\r", i, chip_id);
+  		flash_debug_print(str_buf);
+  	}
   	/*
   	uint8_t data[256];
   	for(int i=0; i<256; i++) data[i] = i/2;
@@ -236,7 +244,7 @@ int main(void)
 
 
 
-		if(idle_state_cnt + 100 < HAL_GetTick())
+		if(idle_state_cnt + 50 < HAL_GetTick())
 		{
 			uint32_t time_delay = HAL_GetTick() - idle_state_cnt;
 
@@ -253,13 +261,16 @@ int main(void)
 
 			char str_buf[100];
 
-			sprintf(str_buf, "Read: %lu %03lu B  Speed: %lu %03lu B/s\r",
-					read.size_cur / 1000, read.size_cur % 1000, read.speed_cur / 1000, read.speed_cur % 1000);
-			flash_debug_print(str_buf);
+			if(read.size_diff != 0 || write.size_diff != 0)
+			{
+				sprintf(str_buf, "Read: %lu %03lu B  Speed: %lu %03lu B/s\r",
+						read.size_cur / 1000, read.size_cur % 1000, read.speed_cur / 1000, read.speed_cur % 1000);
+				flash_debug_print(str_buf);
 
-			sprintf(str_buf, "Write: %lu %03lu B  Speed: %lu %03lu B/s\r\r",
-					write.size_cur / 1000, write.size_cur % 1000, write.speed_cur / 1000, write.speed_cur % 1000);
-			flash_debug_print(str_buf);
+				sprintf(str_buf, "Write: %lu %03lu B  Speed: %lu %03lu B/s\r\r",
+						write.size_cur / 1000, write.size_cur % 1000, write.speed_cur / 1000, write.speed_cur % 1000);
+				flash_debug_print(str_buf);
+			}
 
 			if(FTL_get_idle_cnt())
 			{
@@ -281,8 +292,15 @@ int main(void)
 			}
 			else if(receive_byte == 'f')
 			{
-				flash_debug_print("Erase start\r");
-				W25Q80_erase_all();
+				flash_debug_print("Erase start ");
+
+				for(uint8_t i = 0; i < CS_QTY; i++)
+				{
+					W25Q80_set_cs_num(i);
+					W25Q80_erase_all();
+					flash_debug_print("* ");
+				}
+				W25Q80_get_id();
 				flash_debug_print("Erase finish\r");
 			}
 			receive_byte = 0;
@@ -312,7 +330,7 @@ void SystemClock_Config(void)
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV2;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
@@ -535,18 +553,25 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_14|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PA3 */
   GPIO_InitStruct.Pin = GPIO_PIN_3;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB0 PB12 PB13 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_12|GPIO_PIN_13;
+  /*Configure GPIO pin : PB0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB12 PB13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_13;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

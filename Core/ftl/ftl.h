@@ -4,9 +4,9 @@
 #include "flash.h"
 #include "w25q80.h"
 #include "hardware.h"
+#include "config.h"
 
-#define FTL_USE_EXT_FLASH	(1u)
-#define FTL_DEBUG_ENABLE	(0u)
+
 #define IDLE_WAIT_VAL		(10)
 
 #undef STORAGE_LUN_NBR
@@ -15,7 +15,7 @@
 
 #define STORAGE_LUN_NBR		(1u)
 
-#if FTL_USE_EXT_FLASH
+#if USE_EXT_FLASH
 	#define STORAGE_BLK_SIZ		0x200
 	#define STORAGE_BLK_NBR		(W25Q_MEM_SIZ / STORAGE_BLK_SIZ)
 #else

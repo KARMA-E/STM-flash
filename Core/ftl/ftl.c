@@ -24,14 +24,14 @@ static void _load_block_buf(void)
 	uint32_t die_cs =		_cur_block_num % CS_QTY;
 
 	W25Q80_set_cs_num(die_cs);
-	uint32_t block_addr = W25Q_START_ADDR + (die_block * W25Q_BLOCK_SIZ);
+	uint32_t die_block_addr = W25Q_START_ADDR + (die_block * W25Q_BLOCK_SIZ);
 
 	for(uint32_t page = 0; page < W25Q_BLOCK_SIZ; page += W25Q_PAGE_SIZ)
 	{
-		W25Q80_read_page(block_addr + page, (_cur_block_buf + page));
+		W25Q80_read_page(die_block_addr + page, (_cur_block_buf + page));
 	}
 
-	W25Q80_erase_block(block_addr);
+	W25Q80_erase_block(die_block_addr);
 }
 
 static void _save_block_buf(void)
@@ -40,11 +40,11 @@ static void _save_block_buf(void)
 	uint32_t die_cs =		_cur_block_num % CS_QTY;
 
 	W25Q80_set_cs_num(die_cs);
-	uint32_t block_addr = W25Q_START_ADDR + (die_block * W25Q_BLOCK_SIZ);
+	uint32_t die_block_addr = W25Q_START_ADDR + (die_block * W25Q_BLOCK_SIZ);
 
 	for(uint32_t page = 0; page < W25Q_BLOCK_SIZ; page += W25Q_PAGE_SIZ)
 	{
-		W25Q80_write_page(block_addr + page, (_cur_block_buf + page));
+		W25Q80_write_page(die_block_addr + page, (_cur_block_buf + page));
 	}
 }
 
@@ -106,7 +106,7 @@ void FTL_storage_sector_write(uint32_t sect_num, uint8_t* buf)
 	_work_stat.write_act = 1;
 	_work_stat.idle_cnt = IDLE_WAIT_VAL;
 
-#if FTL_USE_EXT_FLASH
+#if USE_EXT_FLASH
 
 	uint32_t block_num = (sect_num * STORAGE_BLK_SIZ) / W25Q_BLOCK_SIZ;
 
@@ -157,7 +157,7 @@ void FTL_storage_sector_read(uint32_t sect_num, uint8_t* buf)
 	_work_stat.read_act = 1;
 	_work_stat.idle_cnt = IDLE_WAIT_VAL;
 
-#if FTL_USE_EXT_FLASH
+#if USE_EXT_FLASH
 
 	uint32_t block_num = (W25Q_START_ADDR + (sect_num * STORAGE_BLK_SIZ)) / W25Q_BLOCK_SIZ;
 
@@ -174,7 +174,7 @@ void FTL_storage_sector_read(uint32_t sect_num, uint8_t* buf)
 	{
 		uint32_t start_addr = W25Q_START_ADDR + (sect_num * STORAGE_BLK_SIZ);
 
-		for(uint16_t offset = 0; offset < STORAGE_BLK_SIZ; offset += W25Q_PAGE_SIZ)
+		for(uint32_t offset = 0; offset < STORAGE_BLK_SIZ; offset += W25Q_PAGE_SIZ)
 		{
 			//read_block_num = (start_addr + offset) / W25Q_BLOCK_SIZ;
 			//uint32_t die_block =	read_block_num / CS_QTY;
