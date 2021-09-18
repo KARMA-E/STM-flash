@@ -4,8 +4,6 @@
 #include "stm32f1xx_hal.h"
 #include "config.h"
 
-#define CS_QTY				CHIP_QTY
-
 #define W25Q_STAT_BUSY		(0x01)
 
 #define W25Q_START_ADDR 	0x000000										// Начало памяти для хранения данных

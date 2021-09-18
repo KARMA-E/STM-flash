@@ -128,7 +128,7 @@ int main(void)
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_11, GPIO_PIN_RESET);
   	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_12, GPIO_PIN_RESET);
 
-  	for(uint16_t i=0; i<40; i++)
+  	for(uint16_t i=0; i<5; i++)
   	{
   		HAL_Delay(20);
   		flash_debug_print("*");
@@ -159,44 +159,7 @@ int main(void)
   		sprintf(str_buf, "Chip #%d status: %04X\r", i, chip_id);
   		flash_debug_print(str_buf);
   	}
-  	/*
-  	uint8_t data[256];
-  	for(int i=0; i<256; i++) data[i] = i/2;
 
-  	W25Q80_erase_block(0x00E000);					// 27 480 us
-	while(W25Q80_get_status() & W25Q_STAT_BUSY);
-
-	W25Q80_write_page(0x00EF00, data);				// 486 us
-	while(W25Q80_get_status() & W25Q_STAT_BUSY);
-
-
-  	GPIOC->BSRR = GPIO_BSRR_BS13;
-  	TIME_START_USEC;
-  	flash_erase_page(0x08010000);
-  	test_tmp = TIME_GET_USEC;
-  	GPIOC->BSRR = GPIO_BSRR_BR13;
-
-
-  	for(int j=0; j<400; j++)
-	{
-		uint8_t buf[256];
-		W25Q80_read_page(W25Q_PAGE_SIZ * j, buf);				// 728 us
-		while(W25Q80_get_status() & W25Q_STAT_BUSY);
-
-		char str_buf[100];
-		sprintf(str_buf, "№%d ", j);
-		flash_debug_print(str_buf);
-
-		for(int i=0; i<256; i++)
-		{
-			sprintf(str_buf, "%c ", buf[i]);
-			flash_debug_print(str_buf);
-		}
-
-		sprintf(str_buf, "\r\r");
-		flash_debug_print(str_buf);
-	}
-*/
 
   /* USER CODE END 2 */
 
@@ -330,7 +293,7 @@ void SystemClock_Config(void)
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV2;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;

@@ -24,25 +24,19 @@ GPIO_TypeDef * const _cs_port_map[5] =
 
 void CS_set(void)
 {
-#ifdef DEV_BOARD
-	GPIO_SET(_cs_port_map[4], _cs_pin_map[4]);
-#endif
-
-#ifdef LUT_BOARD
+#if MULTI_CHIP_EN
 	for(int i = 0; i < CHIP_QTY; i++)
 	{
 		GPIO_SET(_cs_port_map[i], _cs_pin_map[i]);
 	}
+#else
+	GPIO_SET(_cs_port_map[SINGLE_CHIP_NUM], _cs_pin_map[SINGLE_CHIP_NUM]);
 #endif
 }
 
 void CS_reset(uint8_t cs)
 {
-#ifdef DEV_BOARD
-	GPIO_RESET(_cs_port_map[4], _cs_pin_map[4]);
-#endif
-
-#ifdef LUT_BOARD
+#if MULTI_CHIP_EN
 	if(cs >= 0 && cs < CHIP_QTY)
 	{
 		CS_set();
@@ -50,6 +44,8 @@ void CS_reset(uint8_t cs)
 		while(--wait);
 		GPIO_RESET(_cs_port_map[cs], _cs_pin_map[cs]);
 	}
+#else
+	GPIO_RESET(_cs_port_map[SINGLE_CHIP_NUM], _cs_pin_map[SINGLE_CHIP_NUM]);
 #endif
 }
 

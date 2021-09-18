@@ -1,20 +1,17 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
-#define DEV_BOARD
-//#define	LUT_BOARD
+#define	MULTI_CHIP_EN	(1)
+#define SINGLE_CHIP_NUM	(3)
+#define CHIP_QTY		(4)
+#define	CHIP_MBIT_SIZE	(32)
+#define USE_EXT_FLASH	(1u)
+#define DEBUG_ENABLE	(0u)
 
-#ifdef DEV_BOARD
-	#define CHIP_QTY		(1)
-	#define	CHIP_MBIT_SIZE	(32)
+#if MULTI_CHIP_EN
+	#define CS_QTY		CHIP_QTY
+#else
+	#define CS_QTY		(1)
 #endif
-
-#ifdef LUT_BOARD
-	#define CHIP_QTY		(4)
-	#define	CHIP_MBIT_SIZE	(32)
-#endif
-
-#define USE_EXT_FLASH		(1u)
-#define DEBUG_ENABLE		(0u)
 
 #endif
